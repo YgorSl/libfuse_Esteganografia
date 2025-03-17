@@ -1,166 +1,131 @@
-/*
-  FUSE: Filesystem in Userspace
-  Copyright (C) 2001-2007  Miklos Szeredi <miklos@szeredi.hu>
- 
-  This program can be distributed under the terms of the GNU GPLv2.
-  See the file COPYING.
-*/
- 
-#define FUSE_USE_VERSION 31
- 
-#include <fuse.h>
+
+// C program for the implementation of merge sort
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <stddef.h>
-#include <assert.h>
- 
-/*
- * Command line options
- *
- * We can't set default values for the char* fields here because
- * fuse_opt_parse would attempt to free() them when the user specifies
- * different values on the command line.
- */
-static struct options {
-        const char *filename;
-        const char *contents;
-        int show_help;
-} options;
- 
-#define OPTION(t, p)                           \
-    { t, offsetof(struct options, p), 1 }
-static const struct fuse_opt option_spec[] = {
-        OPTION("--name=%s", filename),
-        OPTION("--contents=%s", contents),
-        OPTION("-h", show_help),
-        OPTION("--help", show_help),
-        FUSE_OPT_END
-};
- 
-static void *hello_init(struct fuse_conn_info *conn,
-                        struct fuse_config *cfg)
-{
-        (void) conn;
-        cfg->kernel_cache = 1;
-        return NULL;
-}
- 
-static int hello_getattr(const char *path, struct stat *stbuf,
-                         struct fuse_file_info *fi)
-{
-        (void) fi;
-        int res = 0;
- 
-        memset(stbuf, 0, sizeof(struct stat));
-        if (strcmp(path, "/") == 0) {
-                stbuf->st_mode = S_IFDIR | 0755;
-                stbuf->st_nlink = 2;
-        } else if (strcmp(path+1, options.filename) == 0) {
-                stbuf->st_mode = S_IFREG | 0444;
-                stbuf->st_nlink = 1;
-                stbuf->st_size = strlen(options.contents);
-        } else
-                res = -ENOENT;
- 
-        return res;
-}
- 
-static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
-                         off_t offset, struct fuse_file_info *fi,
-                         enum fuse_readdir_flags flags)
-{
-        (void) offset;
-        (void) fi;
-        (void) flags;
- 
-        if (strcmp(path, "/") != 0)
-                return -ENOENT;
- 
-        filler(buf, ".", NULL, 0, 0);
-        filler(buf, "..", NULL, 0, 0);
-        filler(buf, options.filename, NULL, 0, 0);
- 
-        return 0;
-}
- 
-static int hello_open(const char *path, struct fuse_file_info *fi)
-{
-        if (strcmp(path+1, options.filename) != 0)
-                return -ENOENT;
- 
-        if ((fi->flags & O_ACCMODE) != O_RDONLY)
-                return -EACCES;
- 
-        return 0;
-}
- 
-static int hello_read(const char *path, char *buf, size_t size, off_t offset,
-                      struct fuse_file_info *fi)
-{
-        size_t len;
-        (void) fi;
-        if(strcmp(path+1, options.filename) != 0)
-                return -ENOENT;
- 
-        len = strlen(options.contents);
-        if (offset < len) {
-                if (offset + size > len)
-                        size = len - offset;
-                memcpy(buf, options.contents + offset, size);
-        } else
-                size = 0;
- 
-        return size;
-}
- 
-static const struct fuse_operations hello_oper = {
-        .init           = hello_init,
-        .getattr        = hello_getattr,
-        .readdir        = hello_readdir,
-        .open           = hello_open,
-        .read           = hello_read,
-};
- 
-static void show_help(const char *progname)
-{
-        printf("usage: %s [options] <mountpoint>\n\n", progname);
-        printf("File-system specific options:\n"
-               "    --name=<s>          Name of the \"hello\" file\n"
-               "                        (default: \"hello\")\n"
-               "    --contents=<s>      Contents \"hello\" file\n"
-               "                        (default \"Hello, World!\\n\")\n"
-               "\n");
-}
- 
-int main(int argc, char *argv[])
-{
-        int ret;
-        struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
- 
-        /* Set defaults -- we have to use strdup so that
-           fuse_opt_parse can free the defaults if other
-           values are specified */
-        options.filename = strdup("hello");
-        options.contents = strdup("Hello World!\n");
- 
-        /* Parse options */
-        if (fuse_opt_parse(&args, &options, option_spec, NULL) == -1)
-                return 1;
- 
-        /* When --help is specified, first print our own file-system
-           specific help text, then signal fuse_main to show
-           additional help (by adding `--help` to the options again)
-           without usage: line (by setting argv[0] to the empty
-           string) */
-        if (options.show_help) {
-                show_help(argv[0]);
-                assert(fuse_opt_add_arg(&args, "--help") == 0);
-                args.argv[0][0] = '\0';
+#include <omp.h>
+#include <time.h>
+#include <bits/time.h>
+
+// Merges two subarrays of arr[].
+// First subarray is arr[left..mid]
+// Second subarray is arr[mid+1..right]
+void merge(int arr[], int left, int mid, int right) {
+    int i, j, k;
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+
+    // Create temporary arrays
+    int leftArr[n1], rightArr[n2];
+
+    // Copy data to temporary arrays
+    for (i = 0; i < n1; i++)
+        leftArr[i] = arr[left + i];
+    for (j = 0; j < n2; j++)
+        rightArr[j] = arr[mid + 1 + j];
+
+    // Merge the temporary arrays back into arr[left..right]
+    i = 0;
+    j = 0;
+    k = left;
+    while (i < n1 && j < n2) {
+        if (leftArr[i] <= rightArr[j]) {
+            arr[k] = leftArr[i];
+            i++;
         }
- 
-        ret = fuse_main(args.argc, args.argv, &hello_oper, NULL);
-        fuse_opt_free_args(&args);
-        return ret;
+        else {
+            arr[k] = rightArr[j];
+            j++;
+        }
+        k++;
+    }
+
+    // Copy the remaining elements of leftArr[], if any
+    while (i < n1) {
+        arr[k] = leftArr[i];
+        i++;
+        k++;
+    }
+
+    // Copy the remaining elements of rightArr[], if any
+    while (j < n2) {
+        arr[k] = rightArr[j];
+        j++;
+        k++;
+    }
 }
+
+// The subarray to be sorted is in the index range [left-right]
+void mergeSort(int arr[], int left, int right) {
+    if (left < right) {
+      
+        // Calculate the midpoint
+        int mid = left + (right - left) / 2;
+
+        // Sort first and second halves
+        mergeSort(arr, left, mid);
+        mergeSort(arr, mid + 1, right);
+
+        // Merge the sorted halves
+        merge(arr, left, mid, right);
+    }
+}
+
+void parallelmergesort(int arr[], int left, int right) {
+    if (left < right) {
+      
+        // Calculate the midpoint
+        int mid = left + (right - left) / 2;
+
+        // Sort first and second halves
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+                parallelmergesort(arr, left, mid);
+            }
+            #pragma omp section
+            {
+                parallelmergesort(arr, mid + 1, right);
+            }
+        }
+
+        // Merge the sorted halves
+        merge(arr, left, mid, right);
+    }
+}
+
+int generateRandomNumberArray(int arr[], int n) {
+    for (int i = 0; i < n; i++) {
+        arr[i] = rand() % 1000;
+    }
+    return 0;
+}
+
+
+int main() {
+    clock_t start, end;
+
+    int n = 1000000;
+    int arr[n];
+    generateRandomNumberArray(arr, n);
+    for (int i = 0; i < n; i++)
+        printf("%d ", arr[i]);
+
+    start = clock();
+
+    time_t start_time = time(0);
+
+    mergeSort(arr, 0, n - 1);
+    time_t end_time = time(0);
+    end = clock();
+
+    time_t difference = end_time - start_time;
+    
+    for (int i = 0; i < n; i++)
+        printf("%d ", arr[i]);
+
+    printf("\nTime taken: %f\n", (double)(difference) / CLOCKS_PER_SEC);
+    return 0;
+}
+
